@@ -1,6 +1,6 @@
 #include <gtest/gtest.h>
-#include "client/client.hpp"
-#include "common/logger.hpp"
+#include "client.hpp"
+#include "logger.hpp"
 
 TEST(ClientTest, SendCommandInvalid) {
     Logger::Init("test.log");

@@ -1,15 +1,12 @@
 #pragma once
-#include <string>
-#include <winsock2.h>
+#include "socket_wrapper.hpp"
 
 class Server {
 public:
     Server();
-    ~Server();
     void Run();
 
 private:
     bool Init();
-    void Cleanup();
-    SOCKET socketFd;
+    SocketWrapper::socket_t socketFd;
 };

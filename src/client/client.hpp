@@ -1,6 +1,7 @@
 #pragma once
+
+#include "socket_wrapper.hpp"
 #include <string>
-#include <winsock2.h>
 
 class Client {
 public:
@@ -11,5 +12,5 @@ public:
 private:
     bool Connect();
     void Disconnect();
-    SOCKET socketFd;
+    SocketWrapper::socket_t socketFd;
 };

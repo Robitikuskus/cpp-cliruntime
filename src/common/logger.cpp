@@ -1,5 +1,6 @@
-#include "common/logger.hpp"
+#include "logger.hpp"
 #include <spdlog/sinks/rotating_file_sink.h>
+#include <filesystem>
 
 std::shared_ptr<spdlog::logger> Logger::logger = nullptr;
 

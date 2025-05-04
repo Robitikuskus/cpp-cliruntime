@@ -1,6 +1,6 @@
 #include <gtest/gtest.h>
-#include "server/command_handler.hpp"
-#include "common/logger.hpp"
+#include "command_handler.hpp"
+#include "logger.hpp"
 
 TEST(ServerTest, HandleStopCommand) {
     Logger::Init("test.log");

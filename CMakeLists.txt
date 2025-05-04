@@ -7,7 +7,6 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 # Platform-specific settings
 if(WIN32)
     add_definitions(-D_WIN32_WINNT=0x0601)
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -D_WIN32_WINNT=0x0601")
 endif()
 
 # External dependencies
@@ -25,7 +24,7 @@ FetchContent_MakeAvailable(spdlog)
 FetchContent_Declare(
     googletest
     GIT_REPOSITORY https://github.com/google/googletest.git
-    GIT_TAG release-1.11.0
+    GIT_TAG v1.15.2
 )
 FetchContent_MakeAvailable(googletest)
 
@@ -33,7 +32,7 @@ FetchContent_MakeAvailable(googletest)
 FetchContent_Declare(
     CLI11
     GIT_REPOSITORY https://github.com/CLIUtils/CLI11.git
-    GIT_TAG v2.3.2
+    GIT_TAG v2.4.2
 )
 FetchContent_MakeAvailable(CLI11)
 
@@ -48,7 +47,9 @@ add_executable(cliruntime
 )
 
 target_include_directories(cliruntime PRIVATE
-    src
+    src/client
+    src/common
+    src/server
 )
 
 target_link_libraries(cliruntime PRIVATE
@@ -57,7 +58,7 @@ target_link_libraries(cliruntime PRIVATE
 )
 
 if(WIN32)
-    target_link_libraries(cliruntime PRIVATE ws2_32)
+    target_link_libraries(cliruntime PRIVATE Ws2_32)
 endif()
 
 # Tests
@@ -74,24 +75,23 @@ add_executable(cliruntime_tests
 )
 
 target_include_directories(cliruntime_tests PRIVATE
-    src
+    src/client
+    src/common
+    src/server
 )
 
 target_link_libraries(cliruntime_tests PRIVATE
-    gtest
-    gtest_main
+    GTest::gtest
+    GTest::gtest_main
     spdlog::spdlog
     CLI11::CLI11
 )
 
 if(WIN32)
-    target_link_libraries(cliruntime_tests PRIVATE ws2_32)
+    target_link_libraries(cliruntime_tests PRIVATE Ws2_32)
+endif()
+if(UNIX AND NOT APPLE)
+    target_link_libraries(cliruntime_tests PRIVATE pthread)
 endif()
 
 add_test(NAME CLIRuntimeTests COMMAND cliruntime_tests)
-
-# Packaging (optional)
-include(CPack)
-set(CPACK_PACKAGE_NAME "CLIRuntime")
-set(CPACK_GENERATOR "ZIP")
-set(CPACK_PACKAGE_MAINTAINER "CLIRuntime Team")

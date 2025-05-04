@@ -1,4 +1,4 @@
-#include "common/config.hpp"
+#include "config.hpp"
 
 Config::Config() : serverPort(12345), serverAddress("127.0.0.1") {}
 

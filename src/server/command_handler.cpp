@@ -1,5 +1,5 @@
 #include "command_handler.hpp"
-#include "common/logger.hpp"
+#include "logger.hpp"
 #include <filesystem>
 #include <sstream>
 #include <chrono>
@@ -31,9 +31,7 @@ std::string CommandHandler::HandleListen(const std::string& directory) {
 
     std::stringstream ss;
     for (const auto& entry : std::filesystem::directory_iterator(dirPath)) {
-        if (!entry.is_directory()) {
-            ss << entry.path().filename().string() << "\n";
-        }
+        ss << entry.path().filename().string() << "\n";
     }
 
     std::string result = ss.str();

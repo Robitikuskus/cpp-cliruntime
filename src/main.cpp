@@ -1,7 +1,7 @@
-#include "common/logger.hpp"
-#include "common/config.hpp"
-#include "client/client.hpp"
-#include "server/server.hpp"
+#include "logger.hpp"
+#include "config.hpp"
+#include "client.hpp"
+#include "server.hpp"
 #include <CLI/CLI.hpp>
 #include <iostream>
 
@@ -23,7 +23,7 @@ int main(int argc, char* argv[]) {
     }
 
     if (version) {
-        std::cout << "CLIRuntime v1.0.0, built on " << __DATE__ << " " << __TIME__ << std::endl;
+        std::cout << "CLIRuntime v1.1.0, built on " << __DATE__ << " " << __TIME__ << std::endl;
         return 0;
     }
 
@@ -42,8 +42,31 @@ int main(int argc, char* argv[]) {
 
     // Run as service
     try {
-        ShowWindow(GetConsoleWindow(), SW_HIDE);
-        FreeConsole();
+#ifdef _WIN32
+    ShowWindow(GetConsoleWindow(), SW_HIDE);
+    FreeConsole();
+#else
+    pid_t pid = fork();
+    if (pid < 0) {
+        throw std::runtime_error("fork() failed:\n" + std::string(strerror(errno)));
+    }
+    if (pid > 0) {
+        exit(0);
+    }
+    umask(0);
+    if (setsid() < 0) {
+        throw std::runtime_error("setsid() failed:\n" + std::string(strerror(errno)));
+    }
+    int fd = open("/dev/null", O_RDWR);
+    if (fd < 0) {
+        throw std::runtime_error("Failed to open /dev/null:\n" + std::string(strerror(errno)));
+    }
+    dup2(fd, STDIN_FILENO);
+    dup2(fd, STDOUT_FILENO);
+    dup2(fd, STDERR_FILENO);
+    close(fd);
+#endif
+
         Server server;
         server.Run();
     } catch (const std::exception& e) {

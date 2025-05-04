@@ -1,26 +1,22 @@
-#include "server/server.hpp"
-#include "server/command_handler.hpp"
-#include "common/logger.hpp"
-#include "common/config.hpp"
-#include <winsock2.h>
-#include <ws2tcpip.h>
+#include "server.hpp"
+#include "command_handler.hpp"
+#include "logger.hpp"
+#include "config.hpp"
+#include "socket_wrapper.hpp"
 #include <stdexcept>
 #include <chrono>
 #include <sstream>
+#ifdef _WIN32
+#include <windows.h>
+#else
+#include <unistd.h>
+#include <sys/stat.h>
+#include <fcntl.h>
+#endif
 
-#pragma comment(lib, "Ws2_32.lib")
-
-Server::Server() : socketFd(INVALID_SOCKET) {
-    WSADATA wsaData;
-    if (WSAStartup(MAKEWORD(2, 2), &wsaData) != 0) {
-        Logger::LogError("WSAStartup failed");
-        throw std::runtime_error("WSAStartup failed");
-    }
-}
-
-Server::~Server() {
-    Cleanup();
-    WSACleanup();
+Server::Server()
+    : socketFd(SocketWrapper::INVALID_SOCKET_VALUE)
+{
 }
 
 void Server::Run() {
@@ -32,66 +28,44 @@ void Server::Run() {
 
     char buffer[1024];
     sockaddr_in clientAddr;
-    int clientLen = sizeof(clientAddr);
-
+    
     auto startTime = std::chrono::steady_clock::now();
 
     while (true) {
-        int received = recvfrom(socketFd, buffer, sizeof(buffer) - 1, 0,
-                                (sockaddr*)&clientAddr, &clientLen);
-        if (received == SOCKET_ERROR) {
-            Logger::LogError("Failed to receive data");
+        try {
+            int received = SocketWrapper::ReceiveFromSocket(socketFd, buffer, sizeof(buffer) - 1, clientAddr);
+            buffer[received] = '\0';
+            std::string command(buffer);
+            Logger::LogInfo(std::string("Received command: ") + command);
+
+            // Log uptime
+            auto now = std::chrono::steady_clock::now();
+            auto uptime = std::chrono::duration_cast<std::chrono::seconds>(now - startTime).count();
+            Logger::LogInfo(std::string("System uptime: ") + std::to_string(uptime) + " seconds");
+
+            std::string response = CommandHandler::HandleCommand(command);
+
+            SocketWrapper::SendToSocket(socketFd, response.c_str(), response.size(), clientAddr);
+
+            if (command == "stop") {
+                Logger::LogInfo("Stopping server");
+                break;
+            }
+        } catch (const std::exception& e) {
+            Logger::LogError("Failed to process data: " + std::string(e.what()));
             continue;
         }
-
-        buffer[received] = '\0';
-        std::string command(buffer);
-        Logger::LogInfo(std::string("Received command: ") + command);
-
-        // Log uptime
-        auto now = std::chrono::steady_clock::now();
-        auto uptime = std::chrono::duration_cast<std::chrono::seconds>(now - startTime).count();
-        Logger::LogInfo(std::string("System uptime: ") + std::to_string(uptime) + " seconds");
-
-        std::string response = CommandHandler::HandleCommand(command);
-
-        sendto(socketFd, response.c_str(), static_cast<int>(response.size()), 0,
-               (sockaddr*)&clientAddr, clientLen);
-
-        if (command == "stop") {
-            Logger::LogInfo("Stopping server");
-            break;
-        }
     }
-
-    Cleanup();
 }
 
 bool Server::Init() {
-    socketFd = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
-    if (socketFd == INVALID_SOCKET) {
-        Logger::LogError("Failed to create socket");
+    try {
+        socketFd = SocketWrapper::CreateSocket();
+        SocketWrapper::BindSocket(socketFd, "0.0.0.0", Config::getInstance().getServerPort());
+        return true;
+    } catch (const std::exception& e) {
+        Logger::LogError("Server initialization failed: " + std::string(e.what()));
+        socketFd = SocketWrapper::INVALID_SOCKET_VALUE;
         return false;
-    }
-
-    sockaddr_in serverAddr{};
-    serverAddr.sin_family = AF_INET;
-    serverAddr.sin_port = htons(Config::getInstance().getServerPort());
-    serverAddr.sin_addr.s_addr = INADDR_ANY;
-
-    if (bind(socketFd, (sockaddr*)&serverAddr, sizeof(serverAddr)) == SOCKET_ERROR) {
-        Logger::LogError("Failed to bind socket");
-        closesocket(socketFd);
-        socketFd = INVALID_SOCKET;
-        return false;
-    }
-
-    return true;
-}
-
-void Server::Cleanup() {
-    if (socketFd != INVALID_SOCKET) {
-        closesocket(socketFd);
-        socketFd = INVALID_SOCKET;
     }
 }
