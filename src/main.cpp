@@ -4,6 +4,13 @@
 #include "server.hpp"
 #include <CLI/CLI.hpp>
 #include <iostream>
+#ifdef _WIN32
+#include <windows.h>
+#else
+#include <unistd.h>
+#include <sys/stat.h>
+#include <fcntl.h>
+#endif
 
 int main(int argc, char* argv[]) {
     Logger::Init("cliruntime.log");
