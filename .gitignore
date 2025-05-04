@@ -1,0 +1,20 @@
+# Build directories and files
+build/
+CMakeFiles/
+CMakeCache.txt
+cmake_install.cmake
+Makefile
+*.cmake
+
+# Executables and libraries
+*.exe
+*.a
+*.lib
+*.dll
+
+# Log and debug files
+*.log
+debug_*.txt
+
+# IDE
+.vscode/
